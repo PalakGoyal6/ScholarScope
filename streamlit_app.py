@@ -22,13 +22,22 @@ uploaded_files = st.file_uploader("Upload one or more PDFs", type="pdf", accept_
 if "uploaded_files_data" not in st.session_state:
     st.session_state.uploaded_files_data = {}
     st.session_state.ready_to_process = False
+    st.session_state.last_uploaded_files = []
 
 if uploaded_files:
-    for file in uploaded_files:
-        if file.name not in st.session_state.uploaded_files_data:
+    uploaded_filenames = [file.name for file in uploaded_files]
+    if set(uploaded_filenames) != set(st.session_state.last_uploaded_files):
+        st.session_state.uploaded_files_data = {}
+        st.session_state.ready_to_process = False
+        st.session_state.last_uploaded_files = uploaded_filenames
+
+        for file in uploaded_files:
             try:
                 doc = fitz.open(stream=file.read(), filetype="pdf")
                 text = "".join(page.get_text() for page in doc)
+                if not text.strip():
+                    st.error(f"No text found in {file.name}. Try another file.")
+                    continue
                 st.session_state.uploaded_files_data[file.name] = {
                     "doc": doc,
                     "text": text,
@@ -105,6 +114,9 @@ if st.session_state.ready_to_process:
                     st.write(f"- {k}: {v}")
                 if not data["summary"]:
                     with st.spinner("Summarizing..."):
+                        if not data["text"].strip():
+                            st.warning("No text found in PDF. Skipping summarization.")
+                            continue
                         parts = chunk_text(data["text"])
                         summary = "\n\n".join([query_cypheralpha(f"Summarize in 5–7 bullet points:\n\n{p}") for p in parts])
                         data["summary"] = summary
@@ -130,7 +142,7 @@ if st.session_state.ready_to_process:
 
     # === QNA TAB ===
     with tabs[1]:
-        st.subheader("🧠 Ask Questions about a Specific Paper")
+        st.subheader("\U0001F9E0 Ask Questions about a Specific Paper")
         selected_pdf = st.selectbox("Select a PDF to query", list(st.session_state.uploaded_files_data.keys()))
         selected_data = st.session_state.uploaded_files_data[selected_pdf]
 
@@ -175,26 +187,26 @@ if st.session_state.ready_to_process:
                     selected_data["chunk_objects"] = {f"chunk_{i}": doc for i, doc in enumerate(context_docs)}
 
             if selected_data["chat_history"]:
-                st.markdown("### 💬 Latest Answer")
+                st.markdown("### \U0001F4AC Latest Answer")
                 st.markdown(f"**{selected_data['chat_history'][-1][1]}**")
                 for chunk_key, page in selected_data["chunk_refs"].items():
-                    if st.button(f"👁️ View Chunk (Page {page})", key=f"view_{selected_pdf}_{chunk_key}"):
+                    if st.button(f"\U0001F441 View Chunk (Page {page})", key=f"view_{selected_pdf}_{chunk_key}"):
                         st.session_state.selected_chunk_text = selected_data["chunk_objects"][chunk_key].page_content
                         st.session_state.selected_page_num = page
                         st.session_state.selected_pdf_for_viewer = selected_pdf
 
             st.markdown("---")
-            st.markdown("### 🗂 Chat History")
+            st.markdown("### \U0001F5C2 Chat History")
             for role, msg in selected_data["chat_history"][:-1]:
                 st.markdown(f"**{role}:** {msg}")
 
         with col2:
-            st.subheader("ℹ️ Tip")
+            st.subheader("\u2139\ufe0f Tip")
             st.info("Use the dropdown to select a paper. Click 'View Chunk' to inspect its matching page and content.")
 
     # === CHUNK VIEWER TAB ===
     with tabs[2]:
-        st.subheader("📄 Chunk Viewer")
+        st.subheader("\U0001F4C4 Chunk Viewer")
         if st.session_state.get("selected_chunk_text") and st.session_state.get("selected_page_num"):
             selected_pdf_name = st.session_state.get("selected_pdf_for_viewer")
             selected_page = st.session_state.selected_page_num
@@ -206,7 +218,7 @@ if st.session_state.ready_to_process:
                 pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
                 img_bytes = pix.tobytes("png")
                 st.image(img_bytes, caption=f"Page {selected_page}", use_container_width=True)
-                st.markdown("#### 📌 Matched Text:")
+                st.markdown("#### \U0001F4CC Matched Text:")
                 st.text_area("", value=chunk_text, height=300, key=f"chunk_viewer_text_{selected_pdf_name}_{selected_page}")
             else:
                 st.error("PDF not found in session state.")
