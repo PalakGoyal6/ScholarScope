@@ -10,8 +10,7 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 
 # === Environment & API ===
 load_dotenv()
-os.environ["OPENROUTER_API_KEY"] = "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"
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 st.set_page_config(page_title="ScholarScope", layout="wide")
 st.title("\U0001F4D8 ScholarScope")
