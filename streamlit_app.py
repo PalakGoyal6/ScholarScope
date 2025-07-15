@@ -112,14 +112,32 @@ if st.session_state.ready_to_process:
             with st.expander(f"\U0001F4D6 {name}"):
                 for k, v in stats.items():
                     st.write(f"- {k}: {v}")
+
                 if not data["summary"]:
                     with st.spinner("Summarizing..."):
                         if not data["text"].strip():
                             st.warning("No text found in PDF. Skipping summarization.")
                             continue
+
                         parts = chunk_text(data["text"])
-                        summary = "\n\n".join([query_cypheralpha(f"Summarize in 5–7 bullet points:\n\n{p}") for p in parts])
-                        data["summary"] = summary
+                        summary_parts = []
+
+                        for i, p in enumerate(parts):
+                            # Skip very short or uninformative chunks
+                            if len(p.strip().split()) < 50:
+                                continue
+
+                            response = query_cypheralpha(p)
+
+                            # Only add if the model didn't reject it
+                            if "does not seem to be a valid research paper" not in response.lower():
+                                summary_parts.append(response)
+
+                        if summary_parts:
+                            data["summary"] = "\n\n".join(summary_parts)
+                        else:
+                            data["summary"] = "No meaningful content found for summarization."
+
                 all_summaries.append((name, data["summary"]))
                 st.markdown(data["summary"])
                 st.download_button("Download Summary", data=data["summary"], file_name=f"{name}_summary.txt")
