@@ -79,7 +79,7 @@ def query_cypheralpha(prompt):
         "X-Title": "ResearchPaperApp"
     }
     data = {
-        "model": "mistralai/mistral-7b-instruct:free",
+        "model": "openrouter/cypher-alpha",
         "messages": [
             {"role": "system", "content": "You are a helpful assistant for summarizing and answering questions from research papers."},
             {"role": "user", "content": prompt}
