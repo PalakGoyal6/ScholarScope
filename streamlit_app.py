@@ -15,6 +15,7 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 st.set_page_config(page_title="ScholarScope", layout="wide")
 st.title("\U0001F4D8 ScholarScope")
 st.markdown("<h3><i>Upload. Ask. Compare. Master any paper in minutes.</i></h3>", unsafe_allow_html=True)
+
 # === File Upload & Initialization ===
 uploaded_files = st.file_uploader("Upload one or more PDFs", type="pdf", accept_multiple_files=True)
 
@@ -117,7 +118,7 @@ if st.session_state.ready_to_process:
             for col, (name, summary) in zip(cols, all_summaries):
                 with col:
                     st.markdown(f"**{name}**")
-                    st.text_area("", value=summary, height=300)
+                    st.text_area(label="", value=summary, height=300, key=f"compare_summary_{name}")
             if "comparison_summary" not in st.session_state:
                 with st.spinner("AI Comparing..."):
                     cmp_prompt = "Compare the following paper summaries:\n\n" + "\n\n".join([f"{n}:\n{s}" for n, s in all_summaries])
@@ -206,7 +207,7 @@ if st.session_state.ready_to_process:
                 img_bytes = pix.tobytes("png")
                 st.image(img_bytes, caption=f"Page {selected_page}", use_container_width=True)
                 st.markdown("#### 📌 Matched Text:")
-                st.text_area("", value=chunk_text, height=300)
+                st.text_area("", value=chunk_text, height=300, key=f"chunk_viewer_text_{selected_pdf_name}_{selected_page}")
             else:
                 st.error("PDF not found in session state.")
         else:
